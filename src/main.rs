@@ -5,8 +5,8 @@ use std::process::exit;
 use tokio::time;
 
 const PWM_FREQ: f64 = 25000.0;
-const MIN_TEMP: i32 = 40;
-const MAX_TEMP: i32 = 50;
+const MIN_TEMP: i32 = 45;
+const MAX_TEMP: i32 = 55;
 const FAN_LOW: f64 = 0.1;
 const FAN_HIGH: f64 = 1.0;
 const FAN_OFF: f64 = 0.0;
@@ -25,7 +25,7 @@ fn get_cpu_temp() -> i32 {
 
 async fn set_fan_speed(pwm: &Pwm) {
     let mut speed = FAN_OFF;
-    static mut LAST_SPEED: f64 = 0.0;
+    static mut LAST_SPEED: Option<f64> = None;
 
     let cpu_temp = get_cpu_temp();
     let delta: f64 = (cpu_temp - MIN_TEMP).into();
@@ -36,8 +36,9 @@ async fn set_fan_speed(pwm: &Pwm) {
     if cpu_temp >= MAX_TEMP {
         speed = 1.0;
     }
-    if speed != unsafe { LAST_SPEED } {
-        unsafe { LAST_SPEED = speed };
+
+    if Some(speed) != unsafe { LAST_SPEED } {
+        unsafe { LAST_SPEED = Some(speed) };
         pwm.set_frequency(PWM_FREQ, speed).expect("error");
     }
     println!("| CPU temperature: {cpu_temp} °C | speed {speed} |");
